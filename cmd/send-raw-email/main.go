@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ses"
 	"github.com/google/uuid"
+	"github.com/joho/godotenv"
 	"gopkg.in/gomail.v2"
 )
 
@@ -31,13 +32,14 @@ func (f *stringsFlag) Set(v string) error {
 }
 
 func main() {
+	godotenv.Load()
+
 	var optTo stringsFlag
 	var optCC stringsFlag
 	var optBCC stringsFlag
 	flag.Var(&optTo, "to", "To address")
 	flag.Var(&optCC, "cc", "Cc address")
 	flag.Var(&optBCC, "bcc", "Bcc address")
-	optRegion := flag.String("region", "ap-northeast-1", "AWS region")
 	optBody := flag.String("body", "", "/path/to/mail-body.txt")
 	optFrom := flag.String("from", "", "From address")
 	optSubject := flag.String("subject", "", "Subject")
@@ -114,7 +116,7 @@ func main() {
 	m.WriteTo(sb)
 	os.Stderr.Write(sb.Bytes())
 
-	ac := aws.NewConfig().WithRegion(*optRegion)
+	ac := aws.NewConfig()
 	sess := session.Must(session.NewSessionWithOptions(
 		session.Options{
 			Config:            *ac,
