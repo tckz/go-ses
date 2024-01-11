@@ -47,9 +47,12 @@ func main() {
 	flag.Var(&optBCC, "bcc", "Bcc address")
 	optBody := flag.String("body", "", "/path/to/mail-body.txt")
 	optFrom := flag.String("from", "", "From address")
+	optCharset := flag.String("charset", "", "Charset")
+	optEncoding := flag.String("encoding", "", "MIME Encoding(quoted-printable|base64|8bit)")
 	optSubject := flag.String("subject", "", "Subject")
 	optContentType := flag.String("content-type", "text/plain", "Content-Type")
 	optConfigurationSet := flag.String("configuration-set", "", "SES configuration set")
+	optNoSend := flag.Bool("no-send", false, "Don't send email, just print raw message")
 	flag.Parse()
 
 	if *optBody == "" {
@@ -65,7 +68,14 @@ func main() {
 		log.Fatalf("*** ReadFile: %v", err)
 	}
 
-	m := gomail.NewMessage()
+	var opts []gomail.MessageSetting
+	if *optCharset != "" {
+		opts = append(opts, gomail.SetCharset(*optCharset))
+	}
+	if *optEncoding != "" {
+		opts = append(opts, gomail.SetEncoding(gomail.Encoding(*optEncoding)))
+	}
+	m := gomail.NewMessage(opts...)
 	fromDomain := ""
 	var fromAddr *mail.Address
 	{
@@ -127,6 +137,11 @@ func main() {
 	sb := &bytes.Buffer{}
 	m.WriteTo(sb)
 	os.Stderr.Write(sb.Bytes())
+	os.Stderr.WriteString("\n")
+
+	if *optNoSend {
+		return
+	}
 
 	ctx := context.Background()
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(os.Getenv("AWS_REGION")))
